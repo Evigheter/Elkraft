@@ -86,6 +86,8 @@ function fyllKabelFargTop() {
   const select = document.getElementById("kabelFargTop");
   const typ = getValdTyp();
 
+  if (!wrap || !select) return;
+
   if (typ !== "kabel") {
     wrap.style.display = "none";
     select.innerHTML = "";
@@ -474,29 +476,41 @@ function ritaSchakt(data) {
   const wrap = svg.parentElement;
   const extraBredd = Math.max(0, data.visningsLista.length - 4) * 140;
   const W = Math.max(1400, wrap.clientWidth - 20, 1200 + extraBredd);
-  const H = 650;
+
   const marginLeft = 70;
   const marginRight = 70;
-  const baseY = 460;
   const innerWidth = W - marginLeft - marginRight;
-  const matty = 230;
-
-  svg.setAttribute("width", W);
-  svg.setAttribute("height", H);
 
   if (!data || data.visningsLista.length === 0) {
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", 500);
+
     const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
     t.setAttribute("x", 40);
     t.setAttribute("y", 140);
     t.setAttribute("fill", "#666");
     t.setAttribute("font-size", "16");
-    t.textContent = "Ingen illustration ännu.";
+    t.textContent = "Ingen illustration ännu";
     svg.appendChild(t);
+
+    document.getElementById("scaleInfo").innerText = "";
     return;
   }
 
   const totalM = data.totalBredd;
   const pxPerM = innerWidth / totalM;
+
+  const maxDiameterM = Math.max(...data.visningsLista.map(item => item.diameter));
+  const maxRadiusPx = (maxDiameterM * pxPerM) / 2;
+
+  const topPadding = 70;
+  const sideMeasureY = topPadding + Math.max(40, maxRadiusPx * 0.25);
+  const baseY = topPadding + maxRadiusPx + 20;
+  const dimY = baseY + 130;
+  const H = dimY + 60;
+
+  svg.setAttribute("width", W);
+  svg.setAttribute("height", H);
 
   document.getElementById("scaleInfo").innerText =
     `Skala i bilden: 1 meter = ${pxPerM.toFixed(1)} px`;
@@ -625,36 +639,35 @@ function ritaSchakt(data) {
     const x2 = b.leftPx;
     const gapPx = x2 - x1;
 
-    line(x1, matty, x2, matty, "#888", 1.5);
-    line(x1, matty - 8, x1, matty + 8, "#888", 1.5);
-    line(x2, matty - 8, x2, matty + 8, "#888", 1.5);
+    line(x1, sideMeasureY, x2, sideMeasureY, "#888", 1.5);
+    line(x1, sideMeasureY - 8, x1, sideMeasureY + 8, "#888", 1.5);
+    line(x2, sideMeasureY - 8, x2, sideMeasureY + 8, "#888", 1.5);
 
     if (gapPx > 26) {
       const boxW = Math.min(70, Math.max(34, gapPx - 6));
-      rect((x1 + x2) / 2 - boxW / 2, matty - 12, boxW, 20, "#f7f7f7");
-      text((x1 + x2) / 2, matty - 1, `${gapMm}`, "#444", Math.max(9, Math.min(12, gapPx * 0.22)), "bold");
+      rect((x1 + x2) / 2 - boxW / 2, sideMeasureY - 12, boxW, 20, "#f7f7f7");
+      text((x1 + x2) / 2, sideMeasureY - 1, `${gapMm}`, "#444", Math.max(9, Math.min(12, gapPx * 0.22)), "bold");
     }
   }
 
   {
     const x1 = marginLeft;
     const x2 = marginLeft + (0.1 * pxPerM);
-    line(x1, matty, x2, matty, "#999", 1.2, "4 3");
-    line(x1, matty - 7, x1, matty + 7, "#999", 1.2);
-    line(x2, matty - 7, x2, matty + 7, "#999", 1.2);
-    text((x1 + x2) / 2, matty - 12, "100", "#666", 11, "bold");
+    line(x1, sideMeasureY, x2, sideMeasureY, "#999", 1.2, "4 3");
+    line(x1, sideMeasureY - 7, x1, sideMeasureY + 7, "#999", 1.2);
+    line(x2, sideMeasureY - 7, x2, sideMeasureY + 7, "#999", 1.2);
+    text((x1 + x2) / 2, sideMeasureY - 12, "100", "#666", 11, "bold");
   }
 
   {
     const x1 = W - marginRight - (0.1 * pxPerM);
     const x2 = W - marginRight;
-    line(x1, matty, x2, matty, "#999", 1.2, "4 3");
-    line(x1, matty - 7, x1, matty + 7, "#999", 1.2);
-    line(x2, matty - 7, x2, matty + 7, "#999", 1.2);
-    text((x1 + x2) / 2, matty - 12, "100", "#666", 11, "bold");
+    line(x1, sideMeasureY, x2, sideMeasureY, "#999", 1.2, "4 3");
+    line(x1, sideMeasureY - 7, x1, sideMeasureY + 7, "#999", 1.2);
+    line(x2, sideMeasureY - 7, x2, sideMeasureY + 7, "#999", 1.2);
+    text((x1 + x2) / 2, sideMeasureY - 12, "100", "#666", 11, "bold");
   }
 
-  const dimY = 590;
   const avrundad = avrundaUppTillTiondel(data.totalBredd);
 
   line(marginLeft, dimY, W - marginRight, dimY, "#888", 1.5);
@@ -701,7 +714,11 @@ function uppdatera() {
 }
 
 document.getElementById("standardValjare").addEventListener("change", valjStandard);
-document.getElementById("kabelFargTop").addEventListener("change", () => {});
+
+const kabelFargTop = document.getElementById("kabelFargTop");
+if (kabelFargTop) {
+  kabelFargTop.addEventListener("change", () => {});
+}
 
 document.querySelectorAll('input[name="typ"]').forEach(radio => {
   radio.addEventListener("change", fyllStandardVal);
