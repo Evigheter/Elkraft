@@ -22,10 +22,11 @@
   - OPTO–annat → 50 mm
 
 ### 🎯 Användning
-Verktyget används för:
+Verktyget kan används för:
 - Projektering
 - Beredning
 - Snabba kontroller i fält
+- Granskning
 
 ---
 
