@@ -1,0 +1,628 @@
+const standardVal = {
+  kabel: [
+    { namn: "N1XE-AS 4G240", diameter: 0.054 },
+    { namn: "N1XE-AS 4G150", diameter: 0.044 },
+    { namn: "N1XE-AS 4G95", diameter: 0.034 },
+    { namn: "N1XE-AS 4G50", diameter: 0.028 },
+    { namn: "N1XE-AR 4G25", diameter: 0.025 },
+    { namn: "AXAL-TT 3X300/50", diameter: 0.075 },
+    { namn: "AXAL-TT 3X240/5", diameter: 0.073 },
+    { namn: "AXAL-TT 3X150/35", diameter: 0.063 },
+    { namn: "AXAL-TT 3X95/35", diameter: 0.055 },
+    { namn: "AXAL-TT 3X50/25", diameter: 0.050 },
+    { namn: "AXAL-TT 3X25/25", diameter: 0.045 },
+    { namn: "OPTO Kabel", diameter: 0.040 }
+  ],
+  ror: [
+    { namn: "160", diameter: 0.160 },
+    { namn: "125", diameter: 0.125 },
+    { namn: "110", diameter: 0.110 },
+    { namn: "75", diameter: 0.075 },
+    { namn: "50", diameter: 0.050 },
+    { namn: "OPTO RÖR", diameter: 0.040 }
+  ]
+};
+
+const rorTyper = ["SRN", "SRS", "SRE"];
+
+let lista = [];
+let draggedIndex = null;
+
+function getValdTyp() {
+  return document.querySelector('input[name="typ"]:checked').value;
+}
+
+function getBerakningslage() {
+  return document.querySelector('input[name="berakningslage"]:checked').value;
+}
+
+function typNamn(typ) {
+  return typ === "ror" ? "Rör" : "Kabel";
+}
+
+function avrundaUppTillTiondel(varde) {
+  return Math.ceil(varde * 10) / 10;
+}
+
+function arOpto(item) {
+  if (!item || !item.namn) return false;
+  const namn = String(item.namn).trim().toUpperCase();
+  return namn === "OPTO" || namn === "OPTO KABEL" || namn === "OPTO RÖR";
+}
+
+function hamtaSchaktBokstav(varde) {
+  const steg = Math.round(varde * 10);
+  const bokstaver = [
+    "A–A","B–B","C–C","D–D","E–E","F–F","G–G","H–H","I–I","J–J",
+    "K–K","L–L","M–M","N–N","O–O","P–P","Q–Q","R–R","S–S","T–T",
+    "U–U","V–V","W–W","X–X","Y–Y","Z–Z"
+  ];
+
+  if (steg >= 1 && steg <= bokstaver.length) {
+    return bokstaver[steg - 1];
+  }
+
+  return "-";
+}
+
+function uppdateraAntalTotalt() {
+  document.getElementById("antalTotalt").innerText = lista.length;
+}
+
+function fyllStandardVal() {
+  const typ = getValdTyp();
+  const select = document.getElementById("standardValjare");
+  const listaVal = standardVal[typ];
+
+  select.innerHTML = "";
+
+  listaVal.forEach((item, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = `${item.namn} (${(item.diameter * 1000).toFixed(0)} mm)`;
+    select.appendChild(option);
+  });
+
+  if (listaVal.length > 0) {
+    document.getElementById("diameter").value = (listaVal[0].diameter * 1000).toFixed(0);
+  }
+}
+
+function valjStandard() {
+  const typ = getValdTyp();
+  const index = document.getElementById("standardValjare").value;
+  const vald = standardVal[typ][index];
+
+  if (vald) {
+    document.getElementById("diameter").value = (vald.diameter * 1000).toFixed(0);
+  }
+}
+
+function laggTill() {
+  const dMm = parseFloat(document.getElementById("diameter").value);
+  const antal = parseInt(document.getElementById("antal").value, 10);
+  const typ = getValdTyp();
+  const index = document.getElementById("standardValjare").value;
+  const vald = standardVal[typ][index];
+
+  if (!dMm || dMm <= 0) {
+    alert("Fel värde på diameter");
+    return;
+  }
+
+  if (!antal || antal <= 0) {
+    alert("Fel värde på antal");
+    return;
+  }
+
+  for (let i = 0; i < antal; i++) {
+    lista.push({
+      diameter: dMm / 1000,
+      typ: typ,
+      namn: vald ? vald.namn : "",
+      rorTyp: typ === "ror" ? "SRN" : ""
+    });
+  }
+
+  uppdatera();
+}
+
+function rensa() {
+  lista = [];
+  document.getElementById("antal").value = 1;
+  uppdatera();
+}
+
+function taBort(index) {
+  lista.splice(index, 1);
+  uppdatera();
+}
+
+function andraDiameter(index, value) {
+  const d = parseFloat(value) / 1000;
+  if (d > 0) {
+    lista[index].diameter = d;
+    uppdatera();
+  }
+}
+
+function andraTyp(index, value) {
+  lista[index].typ = value;
+  lista[index].namn = "";
+  lista[index].rorTyp = value === "ror" ? "SRN" : "";
+  uppdatera();
+}
+
+function andraRorTyp(index, value) {
+  lista[index].rorTyp = value;
+  uppdatera();
+}
+
+function flyttaItem(fromIndex, toIndex) {
+  if (fromIndex === toIndex || fromIndex == null || toIndex == null) return;
+  const item = lista.splice(fromIndex, 1)[0];
+  lista.splice(toIndex, 0, item);
+  uppdatera();
+}
+
+function renderLista() {
+  const wrap = document.getElementById("lista");
+  wrap.innerHTML = "";
+
+  lista.forEach((item, i) => {
+    const row = document.createElement("div");
+    row.className = "drag-item";
+    row.setAttribute("draggable", "true");
+    row.dataset.index = i;
+
+    row.innerHTML = `
+      <span class="drag-handle" title="Dra för att flytta">⋮⋮</span>
+      <span class="item-number">${i + 1}.</span>
+
+      <select onchange="andraTyp(${i}, this.value)">
+        <option value="ror" ${item.typ === "ror" ? "selected" : ""}>Rör</option>
+        <option value="kabel" ${item.typ === "kabel" ? "selected" : ""}>Kabel</option>
+      </select>
+
+      ${item.typ === "ror" ? `
+        <select onchange="andraRorTyp(${i}, this.value)">
+          ${rorTyper.map(t => `
+            <option value="${t}" ${item.rorTyp === t ? "selected" : ""}>${t}</option>
+          `).join("")}
+        </select>
+      ` : ""}
+
+      <input type="text" class="readonly-name" value="${item.namn || ""}" readonly>
+
+      <input type="number"
+             value="${(item.diameter * 1000).toFixed(0)}"
+             onchange="andraDiameter(${i}, this.value)"
+             style="width:80px"> mm
+
+      <button onclick="taBort(${i})" style="color:white; font-weight:bold;">×</button>
+    `;
+
+    row.addEventListener("dragstart", (e) => {
+      draggedIndex = i;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", i);
+    });
+
+    row.addEventListener("dragend", () => {
+      draggedIndex = null;
+      document.querySelectorAll(".drag-item").forEach(el => {
+        el.classList.remove("dragging", "drag-over");
+      });
+    });
+
+    row.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      row.classList.add("drag-over");
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drag-over");
+    });
+
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("drag-over");
+      const targetIndex = parseInt(row.dataset.index, 10);
+      flyttaItem(draggedIndex, targetIndex);
+    });
+
+    wrap.appendChild(row);
+  });
+}
+
+function beraknaMellanrum(a, b) {
+  const aOpto = arOpto(a);
+  const bOpto = arOpto(b);
+
+  if (aOpto && bOpto) {
+    return {
+      avstand: 0,
+      text: "OPTO till OPTO (0 mm)"
+    };
+  }
+
+  if (aOpto || bOpto) {
+    return {
+      avstand: 0.05,
+      text: "OPTO till annat (50 mm)"
+    };
+  }
+
+  const storsta = Math.max(a.diameter, b.diameter);
+
+  if (a.typ === "ror" && b.typ === "ror") {
+    return {
+      avstand: storsta / 2,
+      text: `½ av största (${(storsta * 1000).toFixed(0)} mm)`
+    };
+  }
+
+  return {
+    avstand: storsta,
+    text: `hela största (${(storsta * 1000).toFixed(0)} mm)`
+  };
+}
+
+function sattResultat(bredd) {
+  const avrundad = avrundaUppTillTiondel(bredd);
+  const text = `${bredd.toFixed(3)} m ~ ${avrundad.toFixed(1)} m`;
+
+  document.getElementById("result").innerText = text;
+  document.getElementById("resultBadge").innerText = text;
+  document.getElementById("schaktTabell").innerText = hamtaSchaktBokstav(avrundad);
+}
+
+function tomtResultat() {
+  document.getElementById("result").innerText = "0.000 m ~ 0.0 m";
+  document.getElementById("resultBadge").innerText = "0.000 m ~ 0.0 m";
+  document.getElementById("schaktTabell").innerText = "-";
+  document.getElementById("utrakning").innerHTML = "";
+  document.getElementById("utrakningSimple").innerHTML = "";
+  document.getElementById("scaleInfo").innerText = "";
+}
+
+function byggUtrakning(visningsLista, luckor) {
+  let bredd = 0.1;
+  let text = `0.1 <span style="color:gray">(sidoutrymme vänster)</span>`;
+  const delar = ["0.1"];
+
+  for (let i = 0; i < visningsLista.length; i++) {
+    bredd += visningsLista[i].diameter;
+    delar.push(visningsLista[i].diameter.toFixed(3));
+    text += ` + ${visningsLista[i].diameter.toFixed(3)} <span style="color:gray">(${typNamn(visningsLista[i].typ)}, ${(visningsLista[i].diameter * 1000).toFixed(0)} mm${visningsLista[i].namn ? ", " + visningsLista[i].namn : ""}${visningsLista[i].rorTyp ? ", " + visningsLista[i].rorTyp : ""})</span>`;
+
+    if (i < visningsLista.length - 1) {
+      const m = beraknaMellanrum(visningsLista[i], visningsLista[i + 1]);
+      luckor.push(m.avstand);
+      bredd += m.avstand;
+      delar.push(m.avstand.toFixed(3));
+      text += ` + ${m.avstand.toFixed(3)} <span style="color:gray">(${m.text})</span>`;
+    }
+  }
+
+  bredd += 0.1;
+  delar.push("0.1");
+  text += ` + 0.1 <span style="color:gray">(sidoutrymme höger)</span>`;
+
+  return {
+    bredd,
+    text,
+    textSimple: delar.join(" + ")
+  };
+}
+
+function beraknaStandard() {
+  if (lista.length === 0) {
+    tomtResultat();
+    return {
+      totalBredd: 0,
+      visningsLista: [],
+      luckor: []
+    };
+  }
+
+  const visningsLista = [...lista].sort((a, b) => {
+    const aOpto = arOpto(a);
+    const bOpto = arOpto(b);
+
+    if (aOpto && bOpto) return 0;
+    if (aOpto && !bOpto) return -1;
+    if (bOpto && !aOpto) return 1;
+
+    return a.diameter - b.diameter;
+  });
+
+  const luckor = [];
+  const byggd = byggUtrakning(visningsLista, luckor);
+
+  sattResultat(byggd.bredd);
+  document.getElementById("utrakning").innerHTML = byggd.text;
+  document.getElementById("utrakningSimple").innerText = byggd.textSimple;
+
+  return {
+    totalBredd: byggd.bredd,
+    visningsLista,
+    luckor
+  };
+}
+
+function beraknaFriOrdning() {
+  if (lista.length === 0) {
+    tomtResultat();
+    return {
+      totalBredd: 0,
+      visningsLista: [],
+      luckor: []
+    };
+  }
+
+  const visningsLista = [...lista];
+  const luckor = [];
+  const byggd = byggUtrakning(visningsLista, luckor);
+
+  sattResultat(byggd.bredd);
+  document.getElementById("utrakning").innerHTML = byggd.text;
+  document.getElementById("utrakningSimple").innerText = byggd.textSimple;
+
+  return {
+    totalBredd: byggd.bredd,
+    visningsLista,
+    luckor
+  };
+}
+
+function berakna() {
+  const lage = getBerakningslage();
+  if (lage === "fri") return beraknaFriOrdning();
+  return beraknaStandard();
+}
+
+function ritaSchakt(data) {
+  const svg = document.getElementById("schaktSvg");
+  svg.innerHTML = "";
+
+  const wrap = svg.parentElement;
+  const extraBredd = Math.max(0, data.visningsLista.length - 4) * 140;
+  const W = Math.max(1400, wrap.clientWidth - 20, 1200 + extraBredd);
+  const H = 650;
+  const marginLeft = 70;
+  const marginRight = 70;
+  const baseY = 460;
+  const innerWidth = W - marginLeft - marginRight;
+  const matty = 230;
+
+  svg.setAttribute("width", W);
+  svg.setAttribute("height", H);
+
+  if (!data || data.visningsLista.length === 0) {
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", 40);
+    t.setAttribute("y", 140);
+    t.setAttribute("fill", "#666");
+    t.setAttribute("font-size", "16");
+    t.textContent = "Ingen illustration ännu";
+    svg.appendChild(t);
+    return;
+  }
+
+  const totalM = data.totalBredd;
+  const pxPerM = innerWidth / totalM;
+
+  document.getElementById("scaleInfo").innerText =
+    `Skala i bilden: 1 meter = ${pxPerM.toFixed(1)} px`;
+
+  const ns = "http://www.w3.org/2000/svg";
+
+  function line(x1, y1, x2, y2, color = "#1e73ff", width = 2, dash = "") {
+    const el = document.createElementNS(ns, "line");
+    el.setAttribute("x1", x1);
+    el.setAttribute("y1", y1);
+    el.setAttribute("x2", x2);
+    el.setAttribute("y2", y2);
+    el.setAttribute("stroke", color);
+    el.setAttribute("stroke-width", width);
+    if (dash) el.setAttribute("stroke-dasharray", dash);
+    svg.appendChild(el);
+  }
+
+  function text(x, y, value, color = "#1e73ff", size = 18, weight = "normal", anchor = "middle") {
+    const el = document.createElementNS(ns, "text");
+    el.setAttribute("x", x);
+    el.setAttribute("y", y);
+    el.setAttribute("fill", color);
+    el.setAttribute("font-size", size);
+    el.setAttribute("font-family", "Arial, sans-serif");
+    el.setAttribute("font-weight", weight);
+    el.setAttribute("text-anchor", anchor);
+    el.setAttribute("dominant-baseline", "middle");
+    el.textContent = value;
+    svg.appendChild(el);
+  }
+
+  function circle(cx, cy, r, item) {
+    const el = document.createElementNS(ns, "circle");
+    el.setAttribute("cx", cx);
+    el.setAttribute("cy", cy);
+    el.setAttribute("r", r);
+
+    if (item.typ === "ror") {
+      el.setAttribute("fill", "white");
+      el.setAttribute("stroke", "#1e73ff");
+      el.setAttribute("stroke-width", "2");
+    } else {
+      el.setAttribute("fill", "black");
+      el.setAttribute("stroke", "black");
+      el.setAttribute("stroke-width", "2");
+    }
+
+    svg.appendChild(el);
+  }
+
+  function rect(x, y, w, h, fill, stroke = "none", rx = 0) {
+    const el = document.createElementNS(ns, "rect");
+    el.setAttribute("x", x);
+    el.setAttribute("y", y);
+    el.setAttribute("width", w);
+    el.setAttribute("height", h);
+    el.setAttribute("fill", fill);
+    el.setAttribute("stroke", stroke);
+    if (rx) el.setAttribute("rx", rx);
+    svg.appendChild(el);
+  }
+
+  line(marginLeft, baseY, W - marginRight, baseY);
+
+  let xMeter = 0.1;
+  const positioner = [];
+
+  data.visningsLista.forEach((item, i) => {
+    const diameterPx = item.diameter * pxPerM;
+    const radiusPx = diameterPx / 2;
+    const leftPx = marginLeft + (xMeter * pxPerM);
+    const cx = leftPx + radiusPx;
+    const cy = baseY - radiusPx;
+
+    positioner.push({
+      item,
+      index: i,
+      leftPx,
+      centerPx: cx,
+      rightPx: leftPx + diameterPx,
+      radiusPx,
+      cy
+    });
+
+    circle(cx, cy, radiusPx, item);
+
+    const mm = Math.round(item.diameter * 1000);
+    const fontSize = Math.max(12, Math.min(28, radiusPx * 0.55));
+
+    if (radiusPx > 18) {
+      if (item.typ === "ror") {
+        text(cx, cy - 8, mm, "#1e73ff", fontSize, "normal");
+      } else {
+        text(cx, cy - 8, mm, "white", fontSize, "bold");
+      }
+    }
+
+const namnText = item.namn + (item.rorTyp ? ` ${item.rorTyp}` : "");
+const namnStorlek = data.visningsLista.length > 8 ? 9 : 11;
+
+text(
+  cx,
+  cy + radiusPx + 16,
+  namnText,
+  "#333",
+  namnStorlek,
+  "normal"
+);
+    xMeter += item.diameter;
+    if (i < data.visningsLista.length - 1) xMeter += data.luckor[i];
+  });
+
+  for (let i = 0; i < positioner.length - 1; i++) {
+    const a = positioner[i];
+    const b = positioner[i + 1];
+    const gapM = data.luckor[i];
+    const gapMm = Math.round(gapM * 1000);
+
+    const x1 = a.rightPx;
+    const x2 = b.leftPx;
+    const gapPx = x2 - x1;
+    line(x1, matty, x2, matty, "#888", 1.5);
+    line(x1, matty - 8, x1, matty + 8, "#888", 1.5);
+    line(x2, matty - 8, x2, matty + 8, "#888", 1.5);
+
+
+
+    if (gapPx > 26) {
+        const boxW = Math.min(70, Math.max(34, gapPx - 6));
+        rect((x1 + x2) / 2 - boxW / 2, matty - 12, boxW, 20, "#f7f7f7");
+        text((x1 + x2) / 2, matty - 1, `${gapMm}`, "#444", Math.max(9, Math.min(12, gapPx * 0.22)), "bold");
+}
+  }
+
+  {
+    const x1 = marginLeft;
+    const x2 = marginLeft + (0.1 * pxPerM);
+    line(x1, matty, x2, matty, "#999", 1.2, "4 3");
+    line(x1, matty - 7, x1, matty + 7, "#999", 1.2);
+    line(x2, matty - 7, x2, matty + 7, "#999", 1.2);
+    text((x1 + x2) / 2, matty - 12, "100", "#666", 11, "bold");
+  }
+
+  {
+    const x1 = W - marginRight - (0.1 * pxPerM);
+    const x2 = W - marginRight;
+    line(x1, matty, x2, matty, "#999", 1.2, "4 3");
+    line(x1, matty - 7, x1, matty + 7, "#999", 1.2);
+    line(x2, matty - 7, x2, matty + 7, "#999", 1.2);
+    text((x1 + x2) / 2, matty - 12, "100", "#666", 11, "bold");
+  }
+
+  const dimY = 590;
+  const avrundad = avrundaUppTillTiondel(data.totalBredd);
+
+  line(marginLeft, dimY, W - marginRight, dimY, "#888", 1.5);
+  line(marginLeft, dimY - 8, marginLeft, dimY + 8, "#888", 1.5);
+  line(W - marginRight, dimY - 8, W - marginRight, dimY + 8, "#888", 1.5);
+  text(W / 2, dimY - 16, `Total bredd: ${data.totalBredd.toFixed(3)} m ~ ${avrundad.toFixed(1)} m`, "#444", 14, "bold");
+}
+
+function exportPNG() {
+  const svg = document.getElementById("schaktSvg");
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svg);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = svg.width.baseVal.value;
+  canvas.height = svg.height.baseVal.value;
+
+  const img = new Image();
+  const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  img.onload = function () {
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+
+    const link = document.createElement("a");
+    link.download = "schaktbredd-pro.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  img.src = url;
+}
+
+function uppdatera() {
+  renderLista();
+  uppdateraAntalTotalt();
+  const data = berakna();
+  ritaSchakt(data);
+}
+
+document.getElementById("standardValjare").addEventListener("change", valjStandard);
+
+document.querySelectorAll('input[name="typ"]').forEach(radio => {
+  radio.addEventListener("change", fyllStandardVal);
+});
+
+document.querySelectorAll('input[name="berakningslage"]').forEach(radio => {
+  radio.addEventListener("change", uppdatera);
+});
+
+window.addEventListener("resize", uppdatera);
+
+fyllStandardVal();
+uppdatera();
