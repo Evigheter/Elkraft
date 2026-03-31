@@ -8,7 +8,7 @@ https://evigheter.github.io/Elkraft/
 
 ## 🇸🇪 Svenska
 
-**Schaktbredd PRO+** är ett webbaserat verktyg för att beräkna schaktbredd vid förläggning av kablar och rör enligt praktiska regler inom elkraftsbranschen.
+**Schaktbredd Calc+** är ett webbaserat verktyg för att beräkna schaktbredd vid förläggning av kablar och rör enligt praktiska regler inom elkraftsbranschen.
 
 ### 🔧 Funktioner
 - Beräknar total schaktbredd automatiskt
