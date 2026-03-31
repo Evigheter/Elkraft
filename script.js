@@ -475,11 +475,11 @@ function ritaSchakt(data) {
 
   const wrap = svg.parentElement;
   const extraBredd = Math.max(0, data.visningsLista.length - 4) * 140;
-  const W = Math.max(1400, wrap.clientWidth - 20, 1200 + extraBredd);
+  let W = Math.max(1400, wrap.clientWidth - 20, 1200 + extraBredd);
 
   const marginLeft = 70;
   const marginRight = 70;
-  const innerWidth = W - marginLeft - marginRight;
+  let innerWidth = W - marginLeft - marginRight;
 
   if (!data || data.visningsLista.length === 0) {
     svg.setAttribute("width", W);
@@ -498,14 +498,21 @@ function ritaSchakt(data) {
   }
 
   const totalM = data.totalBredd;
-  const pxPerM = innerWidth / totalM;
-
   const maxDiameterM = Math.max(...data.visningsLista.map(item => item.diameter));
+  const basePxPerM = innerWidth / totalM;
+  const minLargestDiameterPx = 120;
+  const minPxPerM = minLargestDiameterPx / maxDiameterM;
+  const pxPerM = Math.max(basePxPerM, minPxPerM);
+
+  innerWidth = totalM * pxPerM;
+  W = innerWidth + marginLeft + marginRight;
+
   const maxRadiusPx = (maxDiameterM * pxPerM) / 2;
 
   const topPadding = 70;
   const sideMeasureY = topPadding + Math.max(40, maxRadiusPx * 0.25);
-  const baseY = topPadding + maxRadiusPx + 20;
+  // Ge plats för stora dimensioner (t.ex. 160 mm) så cirklar inte klipps upptill.
+  const baseY = topPadding + (maxRadiusPx * 2) + 20;
   const dimY = baseY + 130;
   const H = dimY + 60;
 
