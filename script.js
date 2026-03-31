@@ -490,7 +490,7 @@ function ritaSchakt(data) {
     t.setAttribute("y", 140);
     t.setAttribute("fill", "#666");
     t.setAttribute("font-size", "16");
-    t.textContent = "Ingen illustration ännu";
+    t.textContent = "Ingen illustration ännu.";
     svg.appendChild(t);
     return;
   }
