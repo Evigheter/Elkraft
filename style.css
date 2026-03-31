@@ -85,9 +85,17 @@ footer {
   border-radius: 10px;
 }
 
+.visual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
 .visual-title {
   font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .canvas-wrap {
@@ -222,16 +230,9 @@ label.block {
   flex-wrap: wrap;
 }
 
-.button-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .count-badge {
   display: inline-block;
-  margin-left: 4px;
+  margin-left: 10px;
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 13px;

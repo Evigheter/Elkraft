@@ -32,6 +32,11 @@
         <select id="standardValjare"></select>
       </div>
 
+      <div id="kabelFargTopWrap" style="display:none;">
+        <label class="block">Färg:</label>
+        <select id="kabelFargTop"></select>
+      </div>
+
       <div>
         <label class="block">Diameter (mm):</label>
         <input type="number" id="diameter" value="110" style="width:110px">
@@ -43,11 +48,9 @@
       </div>
     </div>
 
-    <div class="button-row">
+    <div>
       <button onclick="laggTill()">Lägg till</button>
       <button onclick="rensa()">Rensa alla</button>
-      <button onclick="exportPNG()">Exportera PNG</button>
-
       <span class="count-badge badge-black">Antal totalt: <span id="antalTotalt">0</span></span>
       <span class="count-badge badge-red">Total bredd: <span id="resultBadge">0.000 m ~ 0.0 m</span></span>
       <span class="count-badge badge-orange">ELLEVIO SCHAKTTABELL: <span id="schaktTabell">-</span></span>
@@ -69,10 +72,13 @@
   </div>
 
   <div class="visual-box">
-    <div class="visual-title">Illustration</div>
+    <div class="visual-header">
+      <div class="visual-title">Illustration</div>
+      <button onclick="exportPNG()">Exportera PNG</button>
+    </div>
 
     <div class="canvas-wrap">
-      <svg id="schaktSvg" width="900" height="560"></svg>
+      <svg id="schaktSvg" width="900" height="650"></svg>
     </div>
 
     <div class="legend">

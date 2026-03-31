@@ -25,6 +25,13 @@ const standardVal = {
 
 const rorTyper = ["SRN", "SRS", "SRE"];
 
+const kabelFarger = [
+  { namn: "Svart", value: "svart", rgb: "rgb(0,0,0)" },
+  { namn: "Röd", value: "rod", rgb: "rgb(255,0,0)" },
+  { namn: "Lila", value: "lila", rgb: "rgb(191,0,255)" },
+  { namn: "Grön", value: "gron", rgb: "rgb(0,165,0)" }
+];
+
 let lista = [];
 let draggedIndex = null;
 
@@ -34,6 +41,11 @@ function getValdTyp() {
 
 function getBerakningslage() {
   return document.querySelector('input[name="berakningslage"]:checked').value;
+}
+
+function getValdKabelFargTop() {
+  const el = document.getElementById("kabelFargTop");
+  return el ? el.value : "svart";
 }
 
 function typNamn(typ) {
@@ -69,6 +81,30 @@ function uppdateraAntalTotalt() {
   document.getElementById("antalTotalt").innerText = lista.length;
 }
 
+function fyllKabelFargTop() {
+  const wrap = document.getElementById("kabelFargTopWrap");
+  const select = document.getElementById("kabelFargTop");
+  const typ = getValdTyp();
+
+  if (typ !== "kabel") {
+    wrap.style.display = "none";
+    select.innerHTML = "";
+    return;
+  }
+
+  wrap.style.display = "block";
+  const vald = select.value || "svart";
+
+  select.innerHTML = "";
+  kabelFarger.forEach(f => {
+    const option = document.createElement("option");
+    option.value = f.value;
+    option.textContent = f.namn;
+    if (f.value === vald) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
 function fyllStandardVal() {
   const typ = getValdTyp();
   const select = document.getElementById("standardValjare");
@@ -86,6 +122,8 @@ function fyllStandardVal() {
   if (listaVal.length > 0) {
     document.getElementById("diameter").value = (listaVal[0].diameter * 1000).toFixed(0);
   }
+
+  fyllKabelFargTop();
 }
 
 function valjStandard() {
@@ -104,6 +142,7 @@ function laggTill() {
   const typ = getValdTyp();
   const index = document.getElementById("standardValjare").value;
   const vald = standardVal[typ][index];
+  const kabelFargTop = getValdKabelFargTop();
 
   if (!dMm || dMm <= 0) {
     alert("Fel värde på diameter");
@@ -120,7 +159,8 @@ function laggTill() {
       diameter: dMm / 1000,
       typ: typ,
       namn: vald ? vald.namn : "",
-      rorTyp: typ === "ror" ? "SRN" : ""
+      rorTyp: typ === "ror" ? "SRN" : "",
+      kabelFarg: typ === "kabel" ? kabelFargTop : ""
     });
   }
 
@@ -150,6 +190,7 @@ function andraTyp(index, value) {
   lista[index].typ = value;
   lista[index].namn = "";
   lista[index].rorTyp = value === "ror" ? "SRN" : "";
+  lista[index].kabelFarg = value === "kabel" ? "svart" : "";
   uppdatera();
 }
 
@@ -158,11 +199,37 @@ function andraRorTyp(index, value) {
   uppdatera();
 }
 
+function andraKabelFarg(index, value) {
+  lista[index].kabelFarg = value;
+  uppdatera();
+}
+
 function flyttaItem(fromIndex, toIndex) {
   if (fromIndex === toIndex || fromIndex == null || toIndex == null) return;
   const item = lista.splice(fromIndex, 1)[0];
   lista.splice(toIndex, 0, item);
   uppdatera();
+}
+
+function hamtaKabelFarg(item) {
+  if (!item || item.typ !== "kabel") return "rgb(0,0,0)";
+
+  switch (item.kabelFarg) {
+    case "rod":
+      return "rgb(255,0,0)";
+    case "lila":
+      return "rgb(191,0,255)";
+    case "gron":
+      return "rgb(0,165,0)";
+    case "svart":
+    default:
+      return "rgb(0,0,0)";
+  }
+}
+
+function hamtaKabelFargNamn(value) {
+  const hittad = kabelFarger.find(f => f.value === value);
+  return hittad ? hittad.namn : "";
 }
 
 function renderLista() {
@@ -188,6 +255,14 @@ function renderLista() {
         <select onchange="andraRorTyp(${i}, this.value)">
           ${rorTyper.map(t => `
             <option value="${t}" ${item.rorTyp === t ? "selected" : ""}>${t}</option>
+          `).join("")}
+        </select>
+      ` : ""}
+
+      ${item.typ === "kabel" ? `
+        <select onchange="andraKabelFarg(${i}, this.value)">
+          ${kabelFarger.map(f => `
+            <option value="${f.value}" ${item.kabelFarg === f.value ? "selected" : ""}>${f.namn}</option>
           `).join("")}
         </select>
       ` : ""}
@@ -295,7 +370,16 @@ function byggUtrakning(visningsLista, luckor) {
   for (let i = 0; i < visningsLista.length; i++) {
     bredd += visningsLista[i].diameter;
     delar.push(visningsLista[i].diameter.toFixed(3));
-    text += ` + ${visningsLista[i].diameter.toFixed(3)} <span style="color:gray">(${typNamn(visningsLista[i].typ)}, ${(visningsLista[i].diameter * 1000).toFixed(0)} mm${visningsLista[i].namn ? ", " + visningsLista[i].namn : ""}${visningsLista[i].rorTyp ? ", " + visningsLista[i].rorTyp : ""})</span>`;
+
+    const extraInfo = [
+      visningsLista[i].namn || "",
+      visningsLista[i].typ === "ror" ? visningsLista[i].rorTyp || "" : "",
+      visningsLista[i].typ === "kabel" && visningsLista[i].kabelFarg
+        ? hamtaKabelFargNamn(visningsLista[i].kabelFarg)
+        : ""
+    ].filter(Boolean).join(", ");
+
+    text += ` + ${visningsLista[i].diameter.toFixed(3)} <span style="color:gray">(${typNamn(visningsLista[i].typ)}, ${(visningsLista[i].diameter * 1000).toFixed(0)} mm${extraInfo ? ", " + extraInfo : ""})</span>`;
 
     if (i < visningsLista.length - 1) {
       const m = beraknaMellanrum(visningsLista[i], visningsLista[i + 1]);
@@ -456,8 +540,9 @@ function ritaSchakt(data) {
       el.setAttribute("stroke", "#1e73ff");
       el.setAttribute("stroke-width", "2");
     } else {
-      el.setAttribute("fill", "black");
-      el.setAttribute("stroke", "black");
+      const kabelFarg = hamtaKabelFarg(item);
+      el.setAttribute("fill", kabelFarg);
+      el.setAttribute("stroke", kabelFarg);
       el.setAttribute("stroke-width", "2");
     }
 
@@ -511,17 +596,21 @@ function ritaSchakt(data) {
       }
     }
 
-const namnText = item.namn + (item.rorTyp ? ` ${item.rorTyp}` : "");
-const namnStorlek = data.visningsLista.length > 8 ? 9 : 11;
+    const namnText = item.typ === "ror"
+      ? `${item.namn}${item.rorTyp ? " " + item.rorTyp : ""}`
+      : item.namn;
 
-text(
-  cx,
-  cy + radiusPx + 16,
-  namnText,
-  "#333",
-  namnStorlek,
-  "normal"
-);
+    const namnStorlek = data.visningsLista.length > 8 ? 9 : 11;
+
+    text(
+      cx,
+      cy + radiusPx + 16,
+      namnText,
+      "#333",
+      namnStorlek,
+      "normal"
+    );
+
     xMeter += item.diameter;
     if (i < data.visningsLista.length - 1) xMeter += data.luckor[i];
   });
@@ -535,17 +624,16 @@ text(
     const x1 = a.rightPx;
     const x2 = b.leftPx;
     const gapPx = x2 - x1;
+
     line(x1, matty, x2, matty, "#888", 1.5);
     line(x1, matty - 8, x1, matty + 8, "#888", 1.5);
     line(x2, matty - 8, x2, matty + 8, "#888", 1.5);
 
-
-
     if (gapPx > 26) {
-        const boxW = Math.min(70, Math.max(34, gapPx - 6));
-        rect((x1 + x2) / 2 - boxW / 2, matty - 12, boxW, 20, "#f7f7f7");
-        text((x1 + x2) / 2, matty - 1, `${gapMm}`, "#444", Math.max(9, Math.min(12, gapPx * 0.22)), "bold");
-}
+      const boxW = Math.min(70, Math.max(34, gapPx - 6));
+      rect((x1 + x2) / 2 - boxW / 2, matty - 12, boxW, 20, "#f7f7f7");
+      text((x1 + x2) / 2, matty - 1, `${gapMm}`, "#444", Math.max(9, Math.min(12, gapPx * 0.22)), "bold");
+    }
   }
 
   {
@@ -613,6 +701,7 @@ function uppdatera() {
 }
 
 document.getElementById("standardValjare").addEventListener("change", valjStandard);
+document.getElementById("kabelFargTop").addEventListener("change", () => {});
 
 document.querySelectorAll('input[name="typ"]').forEach(radio => {
   radio.addEventListener("change", fyllStandardVal);
