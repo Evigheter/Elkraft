@@ -38,7 +38,7 @@ Verktyget kan används för:
 
 ## 🇬🇧 English
 
-**Schaktbredd PRO+** is a web-based tool for calculating trench width for cable and pipe installations, based on practical rules used in the power industry.
+**Schaktbredd Calc+** is a web-based tool for calculating trench width for cable and pipe installations, based on practical rules used in the power industry.
 
 ### 🔧 Features
 - Automatic trench width calculation
