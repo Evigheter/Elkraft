@@ -2,7 +2,7 @@
 ---
 
 ## 🚀 Live Demo
-- OFFLINE -
+- OFFLINE
 
 ---
 
