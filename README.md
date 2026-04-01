@@ -2,7 +2,7 @@
 ---
 
 ## 🚀 Live Demo
-https://evigheter.github.io/Elkraft/
+- OFFLINE -
 
 ---
 
