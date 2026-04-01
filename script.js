@@ -6,7 +6,7 @@ const standardVal = {
     { namn: "N1XE-AS 4G50", diameter: 0.028 },
     { namn: "N1XE-AR 4G25", diameter: 0.025 },
     { namn: "AXAL-TT 3X300/50", diameter: 0.075 },
-    { namn: "AXAL-TT 3X240/5", diameter: 0.073 },
+    { namn: "AXAL-TT 3X240/5", diameter: 0.070 },
     { namn: "AXAL-TT 3X150/35", diameter: 0.063 },
     { namn: "AXAL-TT 3X95/35", diameter: 0.055 },
     { namn: "AXAL-TT 3X50/25", diameter: 0.050 },
