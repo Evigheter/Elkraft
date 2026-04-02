@@ -2,8 +2,7 @@
 ---
 
 ## 🚀 Live Demo
-- OFFLINE
-
+- TESTING
 ---
 
 ## 🇸🇪 Svenska
