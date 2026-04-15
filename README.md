@@ -1,11 +1,4 @@
 # Schaktbredd Calc+
----
-
-## 🚀 Live Demo
-- TESTING
----
-
-## 🇸🇪 Svenska
 
 **Schaktbredd Calc+** är ett webbaserat verktyg för att beräkna schaktbredd vid förläggning av kablar och rör enligt praktiska regler inom elkraftsbranschen.
 
@@ -35,32 +28,3 @@ Verktyget kan används för:
 
 ---
 
-## 🇬🇧 English
-
-**Schaktbredd Calc+** is a web-based tool for calculating trench width for cable and pipe installations, based on practical rules used in the power industry.
-
-### 🔧 Features
-- Automatic trench width calculation
-- Supports both **cables and pipes**
-- Special handling for **OPTO**
-- Free ordering (drag & drop)
-- Visual trench illustration
-- Automatic rounding to nearest 0.1 m
-- Mapping to **Schakt Table (Ellevio A–A to Z–Z)**
-
-### 📐 Calculation Rules
-- 0.1 m side clearance on each side
-- Spacing:
-  - Pipe–pipe → half of largest diameter
-  - Cable/pipe → largest diameter
-  - OPTO–OPTO → 0 mm
-  - OPTO–other → 50 mm
-
-### 🎯 Use Cases
-Used for:
-- Design and planning
-- Engineering preparation
-- Quick field calculations
-
-## 👨‍💻 Author
-Elias Yalikun
