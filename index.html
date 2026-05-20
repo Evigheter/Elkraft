@@ -14,19 +14,34 @@
 
   <div class="mode-box">
     <strong>Beräkningsläge:</strong><br>
-    <label><input type="radio" name="berakningslage" value="standard" checked> Standard</label><br>
-    <label><input type="radio" name="berakningslage" value="fri"> Fri kabel/rör-ordning</label>
-    <div class="hint">I fri ordning kan du dra och släppa objekten i listan.</div>
+    <div class="mode-options">
+      <label class="mode-option">
+        <input type="radio" name="berakningslage" value="fri" checked>
+        <span>
+          <strong>Fri kabel/rör-ordning</strong>
+          <small>Dra och släpp objekten i exakt ordning.</small>
+        </span>
+      </label>
+
+      <label class="mode-option">
+        <input type="radio" name="berakningslage" value="standard">
+        <span>
+          <strong>Standard</strong>
+          <small>Sorterar objekten automatiskt efter standardlogik.</small>
+        </span>
+      </label>
+    </div>
+    <div class="hint">Programmet startar nu i fri ordning.</div>
   </div>
 
   <div class="top-controls">
-    <div>
+    <div class="tool-card">
       <label class="block">Typ:</label>
-      <input type="radio" name="typ" value="ror" checked> Rör
-      <input type="radio" name="typ" value="kabel"> Kabel
+      <label class="pill-radio"><input type="radio" name="typ" value="ror" checked> Rör</label>
+      <label class="pill-radio"><input type="radio" name="typ" value="kabel"> Kabel</label>
     </div>
 
-    <div class="inline-group">
+    <div class="inline-group tool-card">
       <div>
         <label class="block">Välj standard:</label>
         <select id="standardValjare"></select>
@@ -48,9 +63,14 @@
       </div>
     </div>
 
-    <div>
-      <button onclick="laggTill()">Lägg till</button>
-      <button onclick="rensa()">Rensa alla</button>
+    <div class="action-row tool-card">
+      <button onclick="laggTill()">+ Lägg till</button>
+      <button class="danger-btn" onclick="rensa()">Rensa alla</button>
+      <button class="secondary-btn" onclick="toggleSidoutrymme()" id="sidoutrymmeBtn" type="button">Sidoutrymme: På</button>
+      <label class="switch-label" title="När den är av räknas endast rör/kabel och mellanrum.">
+        <input type="checkbox" id="sidoutrymmeToggle" checked onchange="uppdateraSidoutrymmeText(); uppdatera();">
+        0,1 m på varje sida
+      </label>
       <span class="count-badge badge-black">Antal totalt: <span id="antalTotalt">0</span></span>
       <span class="count-badge badge-red">Total bredd: <span id="resultBadge">0.000 m ~ 0.0 m</span></span>
       <span class="count-badge badge-orange">ELLEVIO SCHAKTTABELL: <span id="schaktTabell">-</span></span>
@@ -59,7 +79,7 @@
 
   <div id="lista" class="drag-list"></div>
 
-  <p><strong>Total bredd:</strong> <span id="result">0.000 m ~ 0.0 m</span></p>
+  <p class="result-line"><strong>Total bredd:</strong> <span id="result">0.000 m ~ 0.0 m</span></p>
 
   <div class="calc">
     <strong>Detaljer:</strong>
@@ -73,7 +93,10 @@
 
   <div class="visual-box">
     <div class="visual-header">
-      <div class="visual-title">Illustration</div>
+      <div class="visual-title-wrap">
+        <div class="visual-title">Illustration</div>
+        <div id="sideSpaceNotice" class="side-space-notice" style="display:none;">Sidoutrymme ej räknat med</div>
+      </div>
       <button onclick="exportPNG()">Exportera PNG</button>
     </div>
 
@@ -86,7 +109,7 @@
       <span><i class="legend-dot legend-kabel"></i> Kabel / OPTO</span>
     </div>
 
-    <div class="info-row" id="scaleInfo"></div>
+    <div class="info-row" id="scaleInfo" style="display:none;"></div>
   </div>
 
   <footer>© Elias Yalikun, 2026.</footer>

@@ -34,13 +34,45 @@ const kabelFarger = [
 
 let lista = [];
 let draggedIndex = null;
-
 function getValdTyp() {
   return document.querySelector('input[name="typ"]:checked').value;
 }
 
 function getBerakningslage() {
   return document.querySelector('input[name="berakningslage"]:checked').value;
+}
+
+function anvandSidoutrymme() {
+  const el = document.getElementById("sidoutrymmeToggle");
+  return el ? el.checked : true;
+}
+
+function getSidoutrymme() {
+  return anvandSidoutrymme() ? 0.1 : 0;
+}
+
+function uppdateraSidoutrymmeText() {
+  const btn = document.getElementById("sidoutrymmeBtn");
+  const toggle = document.getElementById("sidoutrymmeToggle");
+  const notice = document.getElementById("sideSpaceNotice");
+  if (!toggle) return;
+
+  if (btn) {
+    btn.textContent = toggle.checked ? "Sidoutrymme: På" : "Sidoutrymme: Av";
+  }
+
+  if (notice) {
+    notice.style.display = toggle.checked ? "none" : "inline-flex";
+    notice.textContent = "Sidoutrymme ej räknat med";
+  }
+}
+
+function toggleSidoutrymme() {
+  const toggle = document.getElementById("sidoutrymmeToggle");
+  if (!toggle) return;
+  toggle.checked = !toggle.checked;
+  uppdateraSidoutrymmeText();
+  uppdatera();
 }
 
 function getValdKabelFargTop() {
@@ -162,7 +194,8 @@ function laggTill() {
       typ: typ,
       namn: vald ? vald.namn : "",
       rorTyp: typ === "ror" ? "SRN" : "",
-      kabelFarg: typ === "kabel" ? kabelFargTop : ""
+      kabelFarg: typ === "kabel" ? kabelFargTop : "",
+      avstandEfter: null
     });
   }
 
@@ -206,6 +239,28 @@ function andraKabelFarg(index, value) {
   uppdatera();
 }
 
+function andraAvstandEfter(index, value) {
+  if (!lista[index]) return;
+  if (value === "" || value === null) {
+    lista[index].avstandEfter = null;
+    uppdatera();
+    return;
+  }
+  const mm = parseFloat(value);
+  if (!Number.isFinite(mm) || mm < 0) {
+    alert("Avstånd måste vara 0 mm eller större");
+    return;
+  }
+  lista[index].avstandEfter = mm / 1000;
+  uppdatera();
+}
+
+function aterstallAvstandEfter(index) {
+  if (!lista[index]) return;
+  lista[index].avstandEfter = null;
+  uppdatera();
+}
+
 function flyttaItem(fromIndex, toIndex) {
   if (fromIndex === toIndex || fromIndex == null || toIndex == null) return;
   const item = lista.splice(fromIndex, 1)[0];
@@ -236,7 +291,7 @@ function hamtaKabelFargNamn(value) {
 
 function renderLista() {
   const wrap = document.getElementById("lista");
-  wrap.innerHTML = "";
+  wrap.innerHTML = lista.length > 1 ? `<div class="gap-help">Tips: lämna “Avstånd till nästa” tomt för automatisk regel, eller skriv eget avstånd i mm.</div>` : "";
 
   lista.forEach((item, i) => {
     const row = document.createElement("div");
@@ -276,6 +331,18 @@ function renderLista() {
              onchange="andraDiameter(${i}, this.value)"
              style="width:80px"> mm
 
+      ${i < lista.length - 1 ? `
+        <span class="gap-editor" title="Tomt fält använder automatiskt avstånd enligt regeln. Skriv eget värde för att styra avståndet.">
+          Avstånd till nästa:
+          <input type="number"
+                 min="0"
+                 placeholder="auto"
+                 value="${item.avstandEfter !== null && item.avstandEfter !== undefined ? Math.round(item.avstandEfter * 1000) : ''}"
+                 onchange="andraAvstandEfter(${i}, this.value)"> mm
+          <button class="gap-reset-btn" onclick="aterstallAvstandEfter(${i})" type="button">Auto</button>
+        </span>
+      ` : ""}
+
       <button onclick="taBort(${i})" style="color:white; font-weight:bold;">×</button>
     `;
 
@@ -314,6 +381,13 @@ function renderLista() {
 }
 
 function beraknaMellanrum(a, b) {
+  if (a && a.avstandEfter !== null && a.avstandEfter !== undefined) {
+    return {
+      avstand: a.avstandEfter,
+      text: `eget avstånd (${Math.round(a.avstandEfter * 1000)} mm)`
+    };
+  }
+
   const aOpto = arOpto(a);
   const bOpto = arOpto(b);
 
@@ -361,13 +435,21 @@ function tomtResultat() {
   document.getElementById("schaktTabell").innerText = "-";
   document.getElementById("utrakning").innerHTML = "";
   document.getElementById("utrakningSimple").innerHTML = "";
-  document.getElementById("scaleInfo").innerText = "";
+  const scaleInfoTom = document.getElementById("scaleInfo"); if (scaleInfoTom) scaleInfoTom.innerText = "";
 }
 
 function byggUtrakning(visningsLista, luckor) {
-  let bredd = 0.1;
-  let text = `0.1 <span style="color:gray">(sidoutrymme vänster)</span>`;
-  const delar = ["0.1"];
+  const sidoutrymme = getSidoutrymme();
+  let bredd = sidoutrymme;
+  let text = "";
+  const delar = [];
+
+  if (sidoutrymme > 0) {
+    text = `0.1 <span style="color:gray">(sidoutrymme vänster)</span>`;
+    delar.push("0.1");
+  } else {
+    text = `<span class="no-side-space">Sidoutrymme ej räknat med:</span> `;
+  }
 
   for (let i = 0; i < visningsLista.length; i++) {
     bredd += visningsLista[i].diameter;
@@ -381,7 +463,7 @@ function byggUtrakning(visningsLista, luckor) {
         : ""
     ].filter(Boolean).join(", ");
 
-    text += ` + ${visningsLista[i].diameter.toFixed(3)} <span style="color:gray">(${typNamn(visningsLista[i].typ)}, ${(visningsLista[i].diameter * 1000).toFixed(0)} mm${extraInfo ? ", " + extraInfo : ""})</span>`;
+    text += `${i === 0 && sidoutrymme === 0 ? "" : " + "}${visningsLista[i].diameter.toFixed(3)} <span style="color:gray">(${typNamn(visningsLista[i].typ)}, ${(visningsLista[i].diameter * 1000).toFixed(0)} mm${extraInfo ? ", " + extraInfo : ""})</span>`;
 
     if (i < visningsLista.length - 1) {
       const m = beraknaMellanrum(visningsLista[i], visningsLista[i + 1]);
@@ -392,9 +474,11 @@ function byggUtrakning(visningsLista, luckor) {
     }
   }
 
-  bredd += 0.1;
-  delar.push("0.1");
-  text += ` + 0.1 <span style="color:gray">(sidoutrymme höger)</span>`;
+  if (sidoutrymme > 0) {
+    bredd += sidoutrymme;
+    delar.push("0.1");
+    text += ` + 0.1 <span style="color:gray">(sidoutrymme höger)</span>`;
+  }
 
   return {
     bredd,
@@ -474,16 +558,22 @@ function ritaSchakt(data) {
   svg.innerHTML = "";
 
   const wrap = svg.parentElement;
-  const extraBredd = Math.max(0, data.visningsLista.length - 4) * 140;
-  let W = Math.max(1400, wrap.clientWidth - 20, 1200 + extraBredd);
+  const wrapWidth = Math.max(320, wrap.clientWidth - 20);
+  const antalObjekt = data && data.visningsLista ? data.visningsLista.length : 0;
+  const extraBredd = Math.max(0, antalObjekt - 4) * 130;
+  let W = Math.max(900, wrapWidth, 1050 + extraBredd);
 
   const marginLeft = 70;
   const marginRight = 70;
   let innerWidth = W - marginLeft - marginRight;
 
   if (!data || data.visningsLista.length === 0) {
-    svg.setAttribute("width", W);
-    svg.setAttribute("height", 500);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", 420);
+    svg.setAttribute("viewBox", `0 0 ${W} 420`);
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.dataset.exportWidth = W;
+    svg.dataset.exportHeight = 420;
 
     const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
     t.setAttribute("x", 40);
@@ -493,7 +583,7 @@ function ritaSchakt(data) {
     t.textContent = "Ingen illustration ännu";
     svg.appendChild(t);
 
-    document.getElementById("scaleInfo").innerText = "";
+    const scaleInfoTom = document.getElementById("scaleInfo"); if (scaleInfoTom) scaleInfoTom.innerText = "";
     return;
   }
 
@@ -516,11 +606,15 @@ function ritaSchakt(data) {
   const dimY = baseY + 130;
   const H = dimY + 60;
 
-  svg.setAttribute("width", W);
+  svg.setAttribute("width", "100%");
   svg.setAttribute("height", H);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.dataset.exportWidth = W;
+  svg.dataset.exportHeight = H;
 
-  document.getElementById("scaleInfo").innerText =
-    `Skala i bilden: 1 meter = ${pxPerM.toFixed(1)} px`;
+  const scaleInfo = document.getElementById("scaleInfo");
+  if (scaleInfo) scaleInfo.innerText = "";
 
   const ns = "http://www.w3.org/2000/svg";
 
@@ -584,7 +678,7 @@ function ritaSchakt(data) {
 
   line(marginLeft, baseY, W - marginRight, baseY);
 
-  let xMeter = 0.1;
+  let xMeter = getSidoutrymme();
   const positioner = [];
 
   data.visningsLista.forEach((item, i) => {
@@ -657,22 +751,22 @@ function ritaSchakt(data) {
     }
   }
 
-  {
+  if (anvandSidoutrymme()) {
     const x1 = marginLeft;
     const x2 = marginLeft + (0.1 * pxPerM);
     line(x1, sideMeasureY, x2, sideMeasureY, "#999", 1.2, "4 3");
     line(x1, sideMeasureY - 7, x1, sideMeasureY + 7, "#999", 1.2);
     line(x2, sideMeasureY - 7, x2, sideMeasureY + 7, "#999", 1.2);
     text((x1 + x2) / 2, sideMeasureY - 12, "100", "#666", 11, "bold");
-  }
 
-  {
-    const x1 = W - marginRight - (0.1 * pxPerM);
-    const x2 = W - marginRight;
-    line(x1, sideMeasureY, x2, sideMeasureY, "#999", 1.2, "4 3");
-    line(x1, sideMeasureY - 7, x1, sideMeasureY + 7, "#999", 1.2);
-    line(x2, sideMeasureY - 7, x2, sideMeasureY + 7, "#999", 1.2);
-    text((x1 + x2) / 2, sideMeasureY - 12, "100", "#666", 11, "bold");
+    const x3 = W - marginRight - (0.1 * pxPerM);
+    const x4 = W - marginRight;
+    line(x3, sideMeasureY, x4, sideMeasureY, "#999", 1.2, "4 3");
+    line(x3, sideMeasureY - 7, x3, sideMeasureY + 7, "#999", 1.2);
+    line(x4, sideMeasureY - 7, x4, sideMeasureY + 7, "#999", 1.2);
+    text((x3 + x4) / 2, sideMeasureY - 12, "100", "#666", 11, "bold");
+  } else {
+    text(W / 2, Math.max(28, sideMeasureY - 42), "Sidoutrymme ej räknat med", "#b45309", 13, "bold");
   }
 
   const avrundad = avrundaUppTillTiondel(data.totalBredd);
@@ -686,13 +780,19 @@ function ritaSchakt(data) {
 function exportPNG() {
   const svg = document.getElementById("schaktSvg");
   const serializer = new XMLSerializer();
-  const svgStr = serializer.serializeToString(svg);
+  let svgStr = serializer.serializeToString(svg);
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  canvas.width = svg.width.baseVal.value;
-  canvas.height = svg.height.baseVal.value;
+  const exportWidth = parseFloat(svg.dataset.exportWidth || svg.viewBox.baseVal.width || 1200);
+  const exportHeight = parseFloat(svg.dataset.exportHeight || svg.viewBox.baseVal.height || 700);
+
+  canvas.width = exportWidth;
+  canvas.height = exportHeight;
+
+  svgStr = svgStr.replace(/width="100%"/, `width="${canvas.width}"`);
+  svgStr = svgStr.replace(/height="[^"]+"/, `height="${canvas.height}"`);
 
   const img = new Image();
   const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
@@ -737,5 +837,7 @@ document.querySelectorAll('input[name="berakningslage"]').forEach(radio => {
 
 window.addEventListener("resize", uppdatera);
 
+
 fyllStandardVal();
+uppdateraSidoutrymmeText();
 uppdatera();
